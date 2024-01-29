@@ -35,11 +35,11 @@ Once you have your parameters ready, you can initiate the deployment script usin
 
 If you would like to deploy the DataSync VM in a new VNET: 
 
-sudo bash datasync.sh -o new -l eastus -r aws-datasync-rg -v datasync-vm
+`sudo bash datasync.sh -o new -l eastus -r aws-datasync-rg -v datasync-vm`
 
 If you would like to deploy the DataSync VM in an existing VNET:
 
-sudo bash datasync.sh -o existing -l eastus -r aws-datasync-rg -v datasync-vm -g existing-vnet-rg -n existing-vnet -s existing-subnet
+`sudo bash datasync.sh -o existing -l eastus -r aws-datasync-rg -v datasync-vm -g existing-vnet-rg -n existing-vnet -s existing-subnet`
 
 ## Deployment Steps
 
