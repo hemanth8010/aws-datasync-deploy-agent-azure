@@ -4,13 +4,21 @@
 
 set -e
 
-while getopts ":l:r:v:" opt; do
+while getopts ":o:l:r:v:g:n:s:" opt; do
   case $opt in
+    o) option="$OPTARG"
+    ;;
     l) location="$OPTARG"
     ;;
     r) resource_group="$OPTARG"
     ;;
     v) vm_name="$OPTARG"
+    ;;
+    g) vnet_rg="$OPTARG"
+    ;;
+    n) vnet_name="$OPTARG"
+    ;;
+    s) subnet_name="$OPTARG"
     ;;
     \?) echo "Invalid option -$OPTARG" >&3
     exit 1
@@ -24,10 +32,32 @@ while getopts ":l:r:v:" opt; do
   esac
 done
 
-if [ $# -ne 6 ]; then
-    echo "Missing -l or -r or -v"
+shift $((OPTIND -1))
+
+# Check if option is "new" or "existing"
+if [ "$option" != "new" ] && [ "$option" != "existing" ]; then
+    echo "Invalid value for option: $option. Option must be 'new' or 'existing'."
     exit 1
 fi
+
+# Mandatory parameters option, location, resource_group and vm_name
+if [ -z "$option" ] || [ -z "$location" ] || [ -z "$resource_group" ] || [-z "$vm_name"]; then
+    echo "Usage: $0 -o [new|existing] -l [location] -r [resource_group] -v [vm_name] [-g [vnet_rg]] [-n [vnet_name]] [-s [subnet_name]]"
+    exit 1
+fi
+
+
+
+# Check if option is existing, then vnet_rg, vnet_name, and subnet_name are mandatory
+if [ "$option" == "existing" ] && { [ -z "$vnet_rg" ] || [ -z "$vnet_name" ] || [ -z "$subnet_name" ]; }; then
+    echo "[-g [vnet_rg]] [-n [vnet_name]] [-s [subnet_name]] are mandatory when -o option is 'existing'."
+    exit 1
+fi
+
+#if [ $# -ne 12 ]; then
+#    echo "Missing -l or -r or -v or -g or -n or -s"
+#    exit 1
+#fi
 
 
 # Exiting if not running on X86_64 architecture
@@ -43,9 +73,13 @@ if [ ! -w "/tmp" ]; then
   exit 1
 fi
 
+echo -e "\033[0;33mArgument option is $option\033[0m"
 echo -e "\033[0;33mArgument location is $location\033[0m"
 echo -e "\033[0;33mArgument resource_group is $resource_group\033[0m"
 echo -e "\033[0;33mArgument vm_name is $vm_name\033[0m"
+echo -e "\033[0;33mArgument vNet Resource Group is $vnet_rg\033[0m"
+echo -e "\033[0;33mArgument vNet Name is $vnet_name\033[0m"
+echo -e "\033[0;33mArgument subnet is $subnet_name\033[0m"
 
 AZCOPY_VERSION=v10
 
@@ -57,11 +91,11 @@ enabled=1
 gpgcheck=1
 gpgkey=https://packages.microsoft.com/keys/microsoft.asc" | tee /etc/yum.repos.d/azure-cli.repo > /dev/null
     yum -y -q install qemu-img jq unzip azure-cli && yum -y clean all && rm -rf /var/cache
-    echo "\033[0;33mWarning azcopy will be downloaded from Internet but there is no integrity hash available.\033[0;33m" 
+    echo "\033[0;33mWarning azcopy will be downloaded from Internet but there is no integrity hash available.\033[0;33m"
     curl -Ls "https://aka.ms/downloadazcopy-$AZCOPY_VERSION-linux" -o /tmp/azcopy.tar.gz
     tar xzf /tmp/azcopy.tar.gz --directory /tmp || { echo "AzCopy download or extraction failed"; exit 1; }
-    cp /tmp/azcopy_linux_amd64*/azcopy /usr/local/sbin/azcopy
-    chmod +x /usr/local/sbin/azcopy
+    cp /tmp/azcopy_linux_amd64*/azcopy /usr/bin/azcopy
+    chmod +x /usr/bin/azcopy
 }
 
 function download_datasync(){
@@ -114,20 +148,39 @@ function create_azure_vm(){
     az vm create -g "$resource_group" -l "$location" --name "$vm_name" --size Standard_E4as_v4 --os-type linux --attach-os-disk "$disk_name" --public-ip-address "" --only-show-errors || { echo "An error occured while creating the Azure VM"; exit 1; }
 }
 
+function create_azure_vm_existing_vnet(){
+    echo -e "\033[0;33mCreating Azure Virtual Machine for DataSync\033[0;33m"
+    az vm create -g "$resource_group" -l "$location" --name "$vm_name" --size Standard_E4as_v4 --os-type linux --attach-os-disk "$disk_name" --subnet "$(az network vnet subnet show --resource-group $vnet_rg --vnet-name $vnet_name --name $subnet_name -o tsv --query id)" --public-ip-address "" --only-show-errors || { echo "An error occured while creating the Azure VM"; exit 1; }
+}
+
 function cleanup(){
     rm -f /tmp/datasync.zip
     rm -rf /tmp/aws-datasync-*
     rm -rf /tmp/azcopy*
-    az logout
+    az logout || true
     echo -e "\033[0m"
 }
 
-pushd /tmp
-cleanup
-download_and_install_dependencies
-download_datasync
-convert_datasync
-upload_to_azure
-create_azure_vm
-cleanup
-popd
+if [ "$option" == "new" ]; then
+    echo "Option is new"
+    pushd /tmp
+    cleanup
+    download_and_install_dependencies
+    download_datasync
+    convert_datasync
+    upload_to_azure
+    create_azure_vm
+    cleanup
+    popd
+elif [ "$option" == "existing" ]; then
+    echo "Option is existing"
+    pushd /tmp
+    cleanup
+    download_and_install_dependencies
+    download_datasync
+    convert_datasync
+    upload_to_azure
+    create_azure_vm_existing_vnet
+    cleanup
+    popd
+fi
