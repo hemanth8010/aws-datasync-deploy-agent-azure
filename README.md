@@ -12,7 +12,7 @@ Before running the deployment script, please ensure that you have the following 
 
 #### The following parameters are mandatory
 
-- *Option (`-o`):* Choose whether you want to use an `new` VNET or a `existing` VNET.
+- *Option (`-o`):* Choose whether you want to use a `new` VNET or an `existing` VNET.
 - *Location (`-l`):* The Azure region where you want to deploy your resources, such as `eastus`.
 - *Resource Group (`-r`):* The name of the Azure Resource Group where the deployed resources will be managed, e.g., `aws-datasync-rg`.
 - *Virtual Machine Name (`-v`):* The desired name for the Azure Virtual Machine that will host the AWS DataSync Agent, for example, `datasync-vm`.
