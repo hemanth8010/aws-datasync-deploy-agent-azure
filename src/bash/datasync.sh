@@ -4,7 +4,7 @@
 
 set -e
 
-while getopts ":o:l:r:v:g:n:s:" opt; do
+while getopts ":d:l:r:v:g:n:s:" opt; do
   case $opt in
     d) deployment_type="$OPTARG"
     ;;
@@ -20,7 +20,7 @@ while getopts ":o:l:r:v:g:n:s:" opt; do
     ;;
     s) subnet_name="$OPTARG"
     ;;
-    \?) echo "Invalid option -$OPTARG" >&3
+    \?) echo "Invalid option -$OPTARG" >&2
     exit 1
     ;;
   esac
@@ -41,7 +41,7 @@ if [ "$deployment_type" != "new_vnet" ] && [ "$deployment_type" != "existing_vne
 fi
 
 # Mandatory parameters deployment_type, location, resource_group and vm_name
-if [ -z "$deployment_type" ] || [ -z "$location" ] || [ -z "$resource_group" ] || [-z "$vm_name"]; then
+if [ -z "$deployment_type" ] || [ -z "$location" ] || [ -z "$resource_group" ] || [ -z "$vm_name" ]; then
     echo "Required parameters are missing. Usage: -d [new_vnet|existing_vnet] -l [location] -r [resource_group] -v [vm_name] [-g [vnet_rg]] [-n [vnet_name]] [-s [subnet_name]]"
     exit 1
 fi
@@ -73,13 +73,13 @@ if [ ! -w "/tmp" ]; then
   exit 1
 fi
 
-echo -e "\033[0;33mArgument deployment_type is $deployment_type\033[0m"
+echo -e "\033[0;33mArgument deployment type is $deployment_type\033[0m"
 echo -e "\033[0;33mArgument location is $location\033[0m"
-echo -e "\033[0;33mArgument resource_group is $resource_group\033[0m"
-echo -e "\033[0;33mArgument vm_name is $vm_name\033[0m"
+echo -e "\033[0;33mArgument vm resource group is $resource_group\033[0m"
+echo -e "\033[0;33mArgument vm name is $vm_name\033[0m"
 echo -e "\033[0;33mArgument vnet resource group is $vnet_rg\033[0m"
 echo -e "\033[0;33mArgument vnet name is $vnet_name\033[0m"
-echo -e "\033[0;33mArgument subnet is $subnet_name\033[0m"
+echo -e "\033[0;33mArgument subnet name is $subnet_name\033[0m"
 
 AZCOPY_VERSION=v10
 
@@ -172,7 +172,7 @@ popd
 if [ "$deployment_type" == "new_vnet" ]; then
     echo "Deployment type is new_vnet"
     create_azure_vm
-elif [ "$deployment_type" == "existing" ]; then
+elif [ "$deployment_type" == "existing_vnet" ]; then
     echo "Deployment type is existing_vnet"
     create_azure_vm_existing_vnet
 fi
