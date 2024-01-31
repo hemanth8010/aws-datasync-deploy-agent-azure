@@ -29,6 +29,12 @@ This script has been developed to run on an Amazon Linux 2 AMI and the EC2 insta
 
 ![Amazon EC2 Launch Instance](./docs/datasync.png)
 
+### Download the Deployment Script
+
+Run the following command to download the deployment script from the code repository.
+
+`curl -sLO https://raw.githubusercontent.com/aws-samples/aws-datasync-deploy-agent-azure/main/src/bash/datasync.sh`
+
 ### Running the Deployment Script
 
 Once you have your parameters ready, you can initiate the deployment script using the following command:
