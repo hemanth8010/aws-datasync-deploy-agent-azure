@@ -12,16 +12,16 @@ Before running the deployment script, please ensure that you have the following 
 
 #### The following parameters are mandatory
 
-- *Option (`-o`):* Choose whether you want to use a `new` VNET or an `existing` VNET.
+- *Deployment Type (`-d`):* Choose whether you want to use a `new_vnet` or an `existing_vnet`.
 - *Location (`-l`):* The Azure region where you want to deploy your resources, such as `eastus`.
 - *Resource Group (`-r`):* The name of the Azure Resource Group where the deployed resources will be managed, e.g., `aws-datasync-rg`.
 - *Virtual Machine Name (`-v`):* The desired name for the Azure Virtual Machine that will host the AWS DataSync Agent, for example, `datasync-vm`.
 
-#### The following parameters are mandatory when the value of `-o` is `existing`
+#### The following parameters are mandatory when the value of `-d` is `existing_vnet`
 
-- *VNET Resource Group (`-g`):* The name of the Azure Resource Group with the existing VNET.  
-- *VNET Name (`-n`):* The name of the existing VNET.
-- *Subnet Name (`-s`):* The name of the subnet that exists in the VNET.
+- *VNET Resource Group (`-g`):* The name of the Azure Resource Group with the existing VNET, e.g., `existing-vnet-rg`
+- *VNET Name (`-n`):* The name of the existing VNET, e.g., `existing-vnet`
+- *Subnet Name (`-s`):* The name of the subnet that exists in the VNET, e.g., `existing-subnet`
 
 ---
 
@@ -35,11 +35,11 @@ Once you have your parameters ready, you can initiate the deployment script usin
 
 If you would like to deploy the DataSync VM in a new VNET: 
 
-`sudo bash datasync.sh -o new -l eastus -r aws-datasync-rg -v datasync-vm`
+`sudo bash datasync.sh -d new_vnet -l eastus -r aws-datasync-rg -v datasync-vm`
 
 If you would like to deploy the DataSync VM in an existing VNET:
 
-`sudo bash datasync.sh -o existing -l eastus -r aws-datasync-rg -v datasync-vm -g existing-vnet-rg -n existing-vnet -s existing-subnet`
+`sudo bash datasync.sh -d existing_vnet -l eastus -r aws-datasync-rg -v datasync-vm -g existing-vnet-rg -n existing-vnet -s existing-subnet`
 
 ## Deployment Steps
 

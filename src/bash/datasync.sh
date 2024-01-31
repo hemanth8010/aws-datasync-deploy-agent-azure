@@ -6,7 +6,7 @@ set -e
 
 while getopts ":o:l:r:v:g:n:s:" opt; do
   case $opt in
-    o) option="$OPTARG"
+    d) deployment_type="$OPTARG"
     ;;
     l) location="$OPTARG"
     ;;
@@ -34,23 +34,23 @@ done
 
 shift $((OPTIND -1))
 
-# Check if option is "new" or "existing"
-if [ "$option" != "new" ] && [ "$option" != "existing" ]; then
-    echo "Invalid value for option: $option. Option must be 'new' or 'existing'."
+# Check if deployment type is "new_vnet" or "existing_vnet"
+if [ "$deployment_type" != "new_vnet" ] && [ "$deployment_type" != "existing_vnet" ]; then
+    echo "Invalid value for deployment type (-d): $deployment_type. Deployment type must be 'new_vnet' or 'existing_vnet'."
     exit 1
 fi
 
-# Mandatory parameters option, location, resource_group and vm_name
-if [ -z "$option" ] || [ -z "$location" ] || [ -z "$resource_group" ] || [-z "$vm_name"]; then
-    echo "Usage: $0 -o [new|existing] -l [location] -r [resource_group] -v [vm_name] [-g [vnet_rg]] [-n [vnet_name]] [-s [subnet_name]]"
+# Mandatory parameters deployment_type, location, resource_group and vm_name
+if [ -z "$deployment_type" ] || [ -z "$location" ] || [ -z "$resource_group" ] || [-z "$vm_name"]; then
+    echo "Required parameters are missing. Usage: -d [new_vnet|existing_vnet] -l [location] -r [resource_group] -v [vm_name] [-g [vnet_rg]] [-n [vnet_name]] [-s [subnet_name]]"
     exit 1
 fi
 
 
 
-# Check if option is existing, then vnet_rg, vnet_name, and subnet_name are mandatory
-if [ "$option" == "existing" ] && { [ -z "$vnet_rg" ] || [ -z "$vnet_name" ] || [ -z "$subnet_name" ]; }; then
-    echo "[-g [vnet_rg]] [-n [vnet_name]] [-s [subnet_name]] are mandatory when -o option is 'existing'."
+# Check if deployment_type is existing_vnet, then vnet_rg, vnet_name, and subnet_name are mandatory
+if [ "$deployment_type" == "existing_vnet" ] && { [ -z "$vnet_rg" ] || [ -z "$vnet_name" ] || [ -z "$subnet_name" ]; }; then
+    echo "-g [vnet_rg] -n [vnet_name] -s [subnet_name] are mandatory when deployment_type [-d] is 'existing_vnet'."
     exit 1
 fi
 
@@ -73,12 +73,12 @@ if [ ! -w "/tmp" ]; then
   exit 1
 fi
 
-echo -e "\033[0;33mArgument option is $option\033[0m"
+echo -e "\033[0;33mArgument deployment_type is $deployment_type\033[0m"
 echo -e "\033[0;33mArgument location is $location\033[0m"
 echo -e "\033[0;33mArgument resource_group is $resource_group\033[0m"
 echo -e "\033[0;33mArgument vm_name is $vm_name\033[0m"
-echo -e "\033[0;33mArgument vNet Resource Group is $vnet_rg\033[0m"
-echo -e "\033[0;33mArgument vNet Name is $vnet_name\033[0m"
+echo -e "\033[0;33mArgument vnet resource group is $vnet_rg\033[0m"
+echo -e "\033[0;33mArgument vnet name is $vnet_name\033[0m"
 echo -e "\033[0;33mArgument subnet is $subnet_name\033[0m"
 
 AZCOPY_VERSION=v10
@@ -144,12 +144,12 @@ function upload_to_azure(){
 }
 
 function create_azure_vm(){
-    echo -e "\033[0;33mCreating Azure Virtual Machine for DataSync\033[0;33m"
+    echo -e "\033[0;33mCreating Azure Virtual Machine for DataSync with a new vnet\033[0;33m"
     az vm create -g "$resource_group" -l "$location" --name "$vm_name" --size Standard_E4as_v4 --os-type linux --attach-os-disk "$disk_name" --public-ip-address "" --only-show-errors || { echo "An error occured while creating the Azure VM"; exit 1; }
 }
 
 function create_azure_vm_existing_vnet(){
-    echo -e "\033[0;33mCreating Azure Virtual Machine for DataSync\033[0;33m"
+    echo -e "\033[0;33mCreating Azure Virtual Machine for DataSync with an existing vnet\033[0;33m"
     az vm create -g "$resource_group" -l "$location" --name "$vm_name" --size Standard_E4as_v4 --os-type linux --attach-os-disk "$disk_name" --subnet "$(az network vnet subnet show --resource-group $vnet_rg --vnet-name $vnet_name --name $subnet_name -o tsv --query id)" --public-ip-address "" --only-show-errors || { echo "An error occured while creating the Azure VM"; exit 1; }
 }
 
@@ -161,26 +161,19 @@ function cleanup(){
     echo -e "\033[0m"
 }
 
-if [ "$option" == "new" ]; then
-    echo "Option is new"
-    pushd /tmp
-    cleanup
-    download_and_install_dependencies
-    download_datasync
-    convert_datasync
-    upload_to_azure
+pushd /tmp
+cleanup
+download_and_install_dependencies
+download_datasync
+convert_datasync
+upload_to_azure
+popd
+
+if [ "$deployment_type" == "new_vnet" ]; then
+    echo "Deployment type is new_vnet"
     create_azure_vm
-    cleanup
-    popd
-elif [ "$option" == "existing" ]; then
-    echo "Option is existing"
-    pushd /tmp
-    cleanup
-    download_and_install_dependencies
-    download_datasync
-    convert_datasync
-    upload_to_azure
+elif [ "$deployment_type" == "existing" ]; then
+    echo "Deployment type is existing_vnet"
     create_azure_vm_existing_vnet
-    cleanup
-    popd
 fi
+cleanup
